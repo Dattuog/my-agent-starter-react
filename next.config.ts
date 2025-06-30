@@ -1,23 +1,14 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Required for Render static site hosting
-  output: 'export',
-  
-  // Optional but recommended optimizations
-  images: {
-    unoptimized: true, // Required when using 'output: export'
-  },
-  
-  // Enable React Strict Mode
   reactStrictMode: true,
-  
-  // Disable ESLint during build (to prevent warnings from failing build)
+  // Remove output: 'export'
+  images: {
+    unoptimized: false, // Enable Next.js image optimization
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
-  
-  // Disable TypeScript errors during build
   typescript: {
     ignoreBuildErrors: true,
   }
