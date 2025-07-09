@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Room, Track } from 'livekit-client';
-import { useRoom, useParticipants, useLocalParticipant } from '@livekit/components-react';
+import { useRoomContext, useParticipants, useLocalParticipant } from '@livekit/components-react';
 import { Button } from '@/components/ui/button';
 import { TrackToggle } from '@/components/livekit/track-toggle';
 import { AgentControlBar } from '@/components/livekit/agent-control-bar/agent-control-bar';
@@ -30,7 +30,7 @@ interface InterviewLiveKitProps {
 }
 
 const InterviewLiveKit: React.FC<InterviewLiveKitProps> = ({ appConfig }) => {
-  const room = useRoom();
+  const room = useRoomContext();
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
   

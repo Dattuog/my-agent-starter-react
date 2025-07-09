@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Mic, MicOff, Video, VideoOff, MessageCircle, Users, Settings, HelpCircle, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 
