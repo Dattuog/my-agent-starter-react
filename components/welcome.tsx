@@ -17,27 +17,23 @@ export const Welcome = ({
     <div
       ref={ref}
       inert={disabled}
-      className="fixed inset-0 z-10 mx-auto flex h-svh flex-col items-center justify-center text-center"
+      className="fixed inset-0 z-10 mx-auto flex h-svh flex-col items-center justify-center text-center bg-[#101a23]"
     >
-      <CodeBlockIcon size={64} className="mx-auto mb-4" />
-      <h1 className="font-semibold">Voice Agent Quick Start</h1>
-      <p className="text-muted-foreground max-w-prose pt-1 font-medium">
-        Start a call to chat with your voice agent.
-        <br />
-        Need help getting set up? Check out the{' '}
-        <a
-          target="_blank"
-          rel="noopener noreferrer"
-          href="https://docs.livekit.io/agents/start/voice-ai/"
-          className="underline underline-offset-4"
+      <div className="flex flex-col items-center gap-4 bg-[#16202b] rounded-2xl px-8 py-10 shadow-lg">
+        <CodeBlockIcon size={56} className="mx-auto mb-2 text-[#0c7ff2]" />
+        <h1 className="text-2xl font-bold text-white mb-1">Welcome</h1>
+        <p className="text-[#90adcb] text-base mb-4 max-w-xs">
+          Start a call to begin your interview session.
+        </p>
+        <Button
+          variant="primary"
+          size="lg"
+          onClick={onStartCall}
+          className="w-56 font-mono text-base tracking-wide shadow-md"
         >
-          Voice AI quickstart
-        </a>
-        .
-      </p>
-      <Button variant="primary" size="lg" onClick={onStartCall} className="mt-12 w-64 font-mono">
-        {startButtonText}
-      </Button>
+          {startButtonText}
+        </Button>
+      </div>
     </div>
   );
 };

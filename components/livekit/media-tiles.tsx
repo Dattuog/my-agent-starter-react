@@ -148,7 +148,9 @@ export function MediaTiles({ chatOpen }: MediaTilesProps) {
                     transition={agentLayoutTransition}
                     state={agentState}
                     audioTrack={agentAudioTrack}
-                    className={cn(chatOpen ? 'h-[90px]' : 'h-auto w-full')}
+                    className={cn(
+                      chatOpen ? 'h-[90px]' : (!hasSecondTile ? 'h-full w-full flex items-center justify-center' : 'h-auto w-full')
+                    )}
                   />
                 )}
                 {isAvatar && (
@@ -189,7 +191,7 @@ export function MediaTiles({ chatOpen }: MediaTilesProps) {
                     ...animationProps.transition,
                     delay: chatOpen ? 0 : 0.15,
                   }}
-                  className="h-[90px]"
+                  className={chatOpen ? "h-[90px]" : "h-full w-full"} // Fills area when chat is closed
                 />
               )}
               {/* screen */}
