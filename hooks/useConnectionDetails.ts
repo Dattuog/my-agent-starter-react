@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ConnectionDetails } from '@/app/api/connection-details/route';
+import { toastAlert } from '@/components/alert-toast';
 
 export default function useConnectionDetails() {
   // Generate room connection details, including:
@@ -26,7 +27,10 @@ export default function useConnectionDetails() {
       })
       .catch((error) => {
         console.error('Error fetching connection details:', error);
-        alert(error.message);
+        toastAlert({
+          title: 'Error fetching connection details',
+          description: error.message,
+        });
       });
   }, []);
 

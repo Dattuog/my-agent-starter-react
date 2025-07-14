@@ -18,6 +18,12 @@ export type ConnectionDetails = {
 
 export async function GET() {
   try {
+    console.log('Environment variables:', {
+      LIVEKIT_URL,
+      API_KEY_LENGTH: API_KEY?.length,
+      API_SECRET_LENGTH: API_SECRET?.length
+    });
+    
     if (LIVEKIT_URL === undefined) {
       throw new Error('LIVEKIT_URL is not defined');
     }
@@ -50,17 +56,28 @@ export async function GET() {
     return NextResponse.json(data, { headers });
   } catch (error) {
     if (error instanceof Error) {
-      console.error(error);
-      return new NextResponse(error.message, { status: 500 });
+      console.error('LiveKit connection error:', error);
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      );
     }
+    return NextResponse.json(
+      { error: 'An unknown error occurred' },
+      { status: 500 }
+    );
   }
 }
 
 function createParticipantToken(userInfo: AccessTokenOptions, roomName: string) {
+  // Create a new token with no expiration for testing
   const at = new AccessToken(API_KEY, API_SECRET, {
-    ...userInfo,
-    ttl: '15m',
+    identity: userInfo.identity,
+    name: userInfo.name,
+    ttl: 24 * 60 * 60, // 24 hours
   });
+
+  // Add all necessary permissions
   const grant: VideoGrant = {
     room: roomName,
     roomJoin: true,

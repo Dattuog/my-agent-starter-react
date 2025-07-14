@@ -72,35 +72,31 @@ export function App({ appConfig }: AppProps) {
 
   return (
     <>
-      <MotionWelcome
-        key="welcome"
-        startButtonText={startButtonText}
-        onStartCall={() => setSessionStarted(true)}
-        disabled={sessionStarted}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: sessionStarted ? 0 : 1 }}
-        transition={{ duration: 0.5, ease: 'linear', delay: sessionStarted ? 0 : 0.5 }}
-      />
-
-      <RoomContext.Provider value={room}>
-        <RoomAudioRenderer />
-        <StartAudio label="Start Audio" />
-        {/* --- */}
-        <MotionSessionView
-          key="session-view"
-          capabilities={capabilities}
-          sessionStarted={sessionStarted}
-          disabled={!sessionStarted}
+      {/* Only show Welcome when session not started */}
+      {!sessionStarted && (
+        <MotionWelcome
+          key="welcome"
+          startButtonText={startButtonText}
+          onStartCall={() => setSessionStarted(true)}
+          disabled={sessionStarted}
           initial={{ opacity: 0 }}
-          animate={{ opacity: sessionStarted ? 1 : 0 }}
-          transition={{
-            duration: 0.5,
-            ease: 'linear',
-            delay: sessionStarted ? 0.5 : 0,
-          }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5, ease: 'linear' }}
         />
-      </RoomContext.Provider>
-
+      )}
+      {/* Only show SessionView when session started */}
+      {sessionStarted && (
+        <RoomContext.Provider value={room}>
+          <RoomAudioRenderer />
+          <StartAudio label="Start Audio" />
+          <MotionSessionView
+            key="session-view"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, ease: 'linear' }}
+          />
+        </RoomContext.Provider>
+      )}
       <Toaster />
     </>
   );

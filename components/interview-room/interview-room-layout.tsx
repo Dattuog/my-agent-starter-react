@@ -3,11 +3,11 @@
 
 import { useState, useEffect } from 'react';
 import { useLocalParticipant, useRoomContext } from '@livekit/components-react';
-import { InterviewHeader } from './interview-header';
 import { VideoSection } from './video-section';
 import { ControlBar } from './control-bar';
 import { ChatPanel } from './chat-panel';
 import { MediaTiles } from '../livekit/media-tiles';
+import { AudioRecordingManager } from '../audio/AudioRecordingManager';
 import useChatAndTranscription from '../../hooks/useChatAndTranscription';
 import { usePublishPermissions } from '../livekit/agent-control-bar/hooks/use-publish-permissions';
 
@@ -17,25 +17,36 @@ interface InterviewRoomLayoutProps {
 }
 
 export function InterviewRoomLayout({ roomName = "Software Engineer", participantName = "Candidate" }: InterviewRoomLayoutProps) {
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'chat' | 'transcript'>('chat');
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [showAudioRecording, setShowAudioRecording] = useState(false);
+  const [audioAnalysisHistory, setAudioAnalysisHistory] = useState<any[]>([]);
   
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
   const { messages, send } = useChatAndTranscription();
   const permissions = usePublishPermissions();
 
-  // Handle responsive behavior
+  const handleAudioAnalysisUpdate = (analysis: any) => {
+    setAudioAnalysisHistory(prev => [...prev.slice(-200), analysis]); // Keep last 200 frames
+  };
+
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setIsMobileMenuOpen(false);
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      
+      // Close chat on mobile when resizing to desktop
+      if (!mobile && isChatOpen) {
+        // Keep chat open on desktop
       }
     };
 
+    handleResize(); // Initial check
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [isChatOpen]);
 
   const handleEndCall = () => {
     if (room) {
@@ -43,81 +54,132 @@ export function InterviewRoomLayout({ roomName = "Software Engineer", participan
     }
   };
 
+  const handleChatToggle = () => {
+    setIsChatOpen((prev) => !prev);
+    setActiveTab('chat');
+  };
+
+  const handleChatClose = () => {
+    console.log('Closing chat panel');
+    setIsChatOpen(false);
+    setActiveTab('chat');
+  };
+
+  // Calculate main content width based on chat state
+  const getMainContentStyle = () => {
+    if (!isChatOpen) return {};
+    
+    if (isMobile) {
+      return {}; // Mobile uses overlay, no width adjustment needed
+    }
+    
+    return {
+      marginRight: '360px', // Width of chat panel
+      transition: 'margin-right 0.3s ease-in-out'
+    };
+  };
+
   return (
-    <div className="relative flex size-full min-h-screen flex-col bg-[#101a23] dark group/design-root overflow-x-hidden" style={{fontFamily: 'Inter, "Noto Sans", sans-serif'}}>
-      <div className="layout-container flex h-full grow flex-col">
-        <InterviewHeader 
-          participantName={participantName}
-          onMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          isMobileMenuOpen={isMobileMenuOpen}
-        />
-        
-        <div className="flex flex-1 overflow-hidden">
-          {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-w-0">
-            <div className="gap-1 px-4 lg:px-6 flex flex-1 justify-center py-5">
-              <div className="layout-content-container flex flex-col max-w-[920px] flex-1">
-                <h2 className="text-white tracking-light text-2xl lg:text-[28px] font-bold leading-tight px-4 text-left pb-3 pt-5">
-                  Interview Room: {roomName}
-                </h2>
-                
-                <VideoSection>
-                  <MediaTiles chatOpen={activeTab === 'chat'} />
-                </VideoSection>
-                
-                <ControlBar 
-                  permissions={{
-                    canPublishMicrophone: permissions.microphone,
-                    canPublishCamera: permissions.camera,
-                    canPublishScreenShare: permissions.screenShare,
-                    canPublishData: permissions.data,
-                  }}
-                  onEndCall={handleEndCall}
-                  onChatToggle={() => setActiveTab('chat')} // Open chat when icon clicked
+    <div className="fixed inset-0 flex flex-col bg-[#101a23] font-sans">
+      {/* Main content area - adjusts width when chat is open on desktop */}
+      <div 
+        className="flex-1 flex flex-col overflow-hidden pb-20"
+        style={getMainContentStyle()}
+      >
+        {/* Video Section - centered and contained */}
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="w-full max-w-6xl">
+            <VideoSection>
+              <MediaTiles chatOpen={isChatOpen && activeTab === 'chat'} />
+            </VideoSection>
+          </div>
+        </div>
+
+        {/* Audio Recording Panel - Top Right Corner */}
+        {showAudioRecording && (
+          <div className="absolute top-4 right-4 w-80 z-30">
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200/50">
+              <div className="p-3 border-b border-gray-200/50">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-gray-900">Audio Analysis</h3>
+                  <button
+                    onClick={() => setShowAudioRecording(false)}
+                    className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div className="p-3">
+                <AudioRecordingManager 
+                  room={room} 
+                  onAnalysisUpdate={handleAudioAnalysisUpdate}
+                  className="!p-0 !bg-transparent !shadow-none !border-0"
                 />
               </div>
             </div>
           </div>
-          
-          {/* Chat Panel - Desktop */}
-          <div className="hidden lg:block">
-            <ChatPanel 
+        )}
+      </div>
+
+      {/* Control Bar - fixed at bottom with proper spacing */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#101a23] border-t border-[#314d68]/30 py-4 z-30">
+        <div className="flex justify-center">
+          <ControlBar
+            permissions={{
+              canPublishMicrophone: permissions.microphone,
+              canPublishCamera: permissions.camera,
+              canPublishScreenShare: permissions.screenShare,
+              canPublishData: permissions.data,
+            }}
+            onEndCall={handleEndCall}
+            onChatToggle={handleChatToggle}
+            isChatOpen={isChatOpen}
+            onToggleAudioRecording={() => setShowAudioRecording(!showAudioRecording)}
+            showAudioRecording={showAudioRecording}
+            audioAnalysisData={audioAnalysisHistory}
+          />
+        </div>
+      </div>
+
+      {/* Chat/Transcript Panel - Desktop (Side Panel) */}
+      {isChatOpen && !isMobile && (
+        <div className="fixed right-0 top-0 h-full w-[360px] bg-[#101a23] shadow-2xl z-40 border-l border-[#314d68] transition-transform duration-300">
+          <ChatPanel
+            messages={messages}
+            onSendMessage={send}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            participantName={participantName}
+            onClose={handleChatClose}
+          />
+        </div>
+      )}
+
+      {/* Mobile Chat/Transcript Panel - Modal Overlay */}
+      {isChatOpen && isMobile && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center sm:justify-center"
+          onClick={handleChatClose} // Close when clicking the backdrop
+        >
+          <div 
+            className="w-full h-full sm:w-[90%] sm:max-w-md sm:h-[80%] bg-[#101a23] shadow-xl sm:rounded-xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the chat panel
+          >
+            <ChatPanel
               messages={messages}
               onSendMessage={send}
               activeTab={activeTab}
               onTabChange={setActiveTab}
               participantName={participantName}
+              isMobile={true}
+              onClose={handleChatClose}
             />
           </div>
         </div>
-        
-        {/* Mobile Chat Panel Overlay */}
-        {isMobileMenuOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden">
-            <div className="absolute right-0 top-0 h-full w-full max-w-sm bg-[#101a23] shadow-xl">
-              <div className="flex items-center justify-between p-4 border-b border-[#314d68]">
-                <h3 className="text-white font-semibold">Chat</h3>
-                <button 
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-white hover:text-gray-300 p-2"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <ChatPanel 
-                messages={messages}
-                onSendMessage={send}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                participantName={participantName}
-                isMobile={true}
-              />
-            </div>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

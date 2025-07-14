@@ -16,66 +16,6 @@ const MotionVideoTile = motion.create(VideoTile);
 const MotionAgentTile = motion.create(AgentTile);
 const MotionAvatarTile = motion.create(AvatarTile);
 
-const animationProps = {
-  initial: {
-    opacity: 0,
-    scale: 0,
-  },
-  animate: {
-    opacity: 1,
-    scale: 1,
-  },
-  exit: {
-    opacity: 0,
-    scale: 0,
-  },
-  transition: {
-    type: 'spring',
-    stiffness: 675,
-    damping: 75,
-    mass: 1,
-  },
-};
-
-const classNames = {
-  // GRID
-  // 2 Columns x 3 Rows
-  grid: [
-    'h-full w-full',
-    'grid gap-x-2 place-content-center',
-    'grid-cols-[1fr_1fr] grid-rows-[90px_1fr_90px]',
-  ],
-  // Agent
-  // chatOpen: true,
-  // hasSecondTile: true
-  // layout: Column 1 / Row 1
-  // align: x-end y-center
-  agentChatOpenWithSecondTile: ['col-start-1 row-start-1', 'self-center justify-self-end'],
-  // Agent
-  // chatOpen: true,
-  // hasSecondTile: false
-  // layout: Column 1 / Row 1 / Column-Span 2
-  // align: x-center y-center
-  agentChatOpenWithoutSecondTile: ['col-start-1 row-start-1', 'col-span-2', 'place-content-center'],
-  // Agent
-  // chatOpen: false
-  // layout: Column 1 / Row 1 / Column-Span 2 / Row-Span 3
-  // align: x-center y-center
-  agentChatClosed: ['col-start-1 row-start-1', 'col-span-2 row-span-3', 'place-content-center'],
-  // Second tile
-  // chatOpen: true,
-  // hasSecondTile: true
-  // layout: Column 2 / Row 1
-  // align: x-start y-center
-  secondTileChatOpen: ['col-start-2 row-start-1', 'self-center justify-self-start'],
-  // Second tile
-  // chatOpen: false,
-  // hasSecondTile: false
-  // layout: Column 2 / Row 2
-  // align: x-end y-end
-  secondTileChatClosed: ['col-start-2 row-start-3', 'place-content-end'],
-};
-
 export function useLocalTrackRef(source: Track.Source) {
   const { localParticipant } = useLocalParticipant();
   const publication = localParticipant.getTrackPublication(source);
@@ -100,116 +40,57 @@ export function MediaTiles({ chatOpen }: MediaTilesProps) {
   const [screenShareTrack] = useTracks([Track.Source.ScreenShare]);
   const cameraTrack: TrackReference | undefined = useLocalTrackRef(Track.Source.Camera);
 
-  const isCameraEnabled = cameraTrack && !cameraTrack.publication.isMuted;
-  const isScreenShareEnabled = screenShareTrack && !screenShareTrack.publication.isMuted;
-  const hasSecondTile = isCameraEnabled || isScreenShareEnabled;
-
-  const transition = {
-    ...animationProps.transition,
-    delay: chatOpen ? 0 : 0.15, // delay on close
-  };
-  const agentAnimate = {
-    ...animationProps.animate,
-    scale: chatOpen ? 1 : 3,
-    transition,
-  };
-  const avatarAnimate = {
-    ...animationProps.animate,
-    transition,
-  };
-  const agentLayoutTransition = transition;
-  const avatarLayoutTransition = transition;
-
-  const isAvatar = agentVideoTrack !== undefined;
-
+  // Google Meet-like grid: AI Interviewer (main speaker, left), Candidate (right)
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-8 bottom-32 z-50 md:top-12 md:bottom-40">
-      <div className="relative mx-auto h-full max-w-2xl px-4 md:px-0">
-        <div className={cn(classNames.grid)}>
-          {/* agent */}
-          {isAgentActive && (
-            <div
-              className={cn([
-                'grid',
-                // 'bg-[hotpink]', // for debugging
-                !chatOpen && classNames.agentChatClosed,
-                chatOpen && hasSecondTile && classNames.agentChatOpenWithSecondTile,
-                chatOpen && !hasSecondTile && classNames.agentChatOpenWithoutSecondTile,
-              ])}
-            >
-              <AnimatePresence mode="popLayout">
-                {!isAvatar && (
-                  // audio-only agent
-                  <MotionAgentTile
-                    key="agent"
-                    layoutId="agent"
-                    {...animationProps}
-                    animate={agentAnimate}
-                    transition={agentLayoutTransition}
-                    state={agentState}
-                    audioTrack={agentAudioTrack}
-                    className={cn(
-                      chatOpen ? 'h-[90px]' : (!hasSecondTile ? 'h-full w-full flex items-center justify-center' : 'h-auto w-full')
-                    )}
-                  />
-                )}
-                {isAvatar && (
-                  // avatar agent
-                  <MotionAvatarTile
-                    key="avatar"
-                    layoutId="avatar"
-                    {...animationProps}
-                    animate={avatarAnimate}
-                    transition={avatarLayoutTransition}
-                    videoTrack={agentVideoTrack}
-                    className={cn(
-                      chatOpen ? 'h-[90px] [&>video]:h-[90px] [&>video]:w-auto' : 'h-auto w-full'
-                    )}
-                  />
-                )}
-              </AnimatePresence>
+    <div className="w-full h-full flex flex-col bg-[#202124]">
+      <div className="flex-1 flex flex-col justify-center items-center px-6 pt-6 pb-2">
+        <div className="w-full max-w-6xl mx-auto grid grid-cols-2 gap-6 h-[60vh] min-h-[340px]">
+          {/* AI Interviewer (main speaker, left) */}
+          <div className="video-tile bg-[#3c4043] rounded-xl relative flex flex-col items-center justify-center overflow-hidden shadow-lg transition-all duration-200 hover:shadow-2xl hover:ring-2 hover:ring-[#0c7ff2] hover:bg-[#353a40] cursor-pointer">
+            {isAgentActive ? (
+              agentVideoTrack ? (
+                <MotionAvatarTile
+                  key="avatar"
+                  layoutId="avatar"
+                  videoTrack={agentVideoTrack}
+                  className="w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-full shadow-lg bg-black/30 flex items-center justify-center"
+                />
+              ) : (
+                <MotionAgentTile
+                  key="agent"
+                  layoutId="agent"
+                  state={agentState}
+                  audioTrack={agentAudioTrack}
+                  className="w-32 h-32 sm:w-40 sm:h-40 md:w-56 md:h-56 lg:w-64 lg:h-64 rounded-full shadow-lg bg-black/30 flex items-center justify-center"
+                />
+              )
+            ) : (
+              <div className="video-placeholder w-20 h-20 md:w-28 md:h-28 rounded-full flex items-center justify-center text-3xl font-semibold bg-gradient-to-br from-[#667eea] to-[#764ba2]">
+                A
+              </div>
+            )}
+            <div className="participant-name absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded text-xs font-medium text-white">
+              AI Interviewer
             </div>
-          )}
-
-          <div
-            className={cn([
-              'grid',
-              chatOpen && classNames.secondTileChatOpen,
-              !chatOpen && classNames.secondTileChatClosed,
-            ])}
-          >
-            {/* camera */}
-            <AnimatePresence>
-              {cameraTrack && isCameraEnabled && (
-                <MotionVideoTile
-                  key="camera"
-                  layout="position"
-                  layoutId="camera"
-                  {...animationProps}
-                  trackRef={cameraTrack}
-                  transition={{
-                    ...animationProps.transition,
-                    delay: chatOpen ? 0 : 0.15,
-                  }}
-                  className={chatOpen ? "h-[90px]" : "h-full w-full"} // Fills area when chat is closed
-                />
-              )}
-              {/* screen */}
-              {isScreenShareEnabled && (
-                <MotionVideoTile
-                  key="screen"
-                  layout="position"
-                  layoutId="screen"
-                  {...animationProps}
-                  trackRef={screenShareTrack}
-                  transition={{
-                    ...animationProps.transition,
-                    delay: chatOpen ? 0 : 0.15,
-                  }}
-                  className="h-[90px]"
-                />
-              )}
-            </AnimatePresence>
+          </div>
+          {/* Candidate (right) */}
+          <div className="video-tile bg-[#3c4043] rounded-xl relative flex flex-col items-center justify-center overflow-hidden shadow-lg transition-all duration-200 hover:shadow-2xl hover:ring-2 hover:ring-[#0c7ff2] hover:bg-[#353a40] cursor-pointer">
+            {cameraTrack && !cameraTrack.publication.isMuted ? (
+              <MotionVideoTile
+                key="camera"
+                layout="position"
+                layoutId="camera"
+                trackRef={cameraTrack}
+                className="absolute inset-0 w-full h-full object-cover rounded-xl"
+              />
+            ) : (
+              <div className="video-placeholder w-20 h-20 md:w-28 md:h-28 rounded-full flex items-center justify-center text-3xl font-semibold bg-gradient-to-br from-[#f093fb] to-[#f5576c]">
+                C
+              </div>
+            )}
+            <div className="participant-name absolute bottom-4 left-4 bg-black/70 px-3 py-1 rounded text-xs font-medium text-white">
+              Candidate
+            </div>
           </div>
         </div>
       </div>
