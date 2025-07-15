@@ -14,6 +14,7 @@ import {
   RefreshCw, Sparkles
 } from 'lucide-react';
 import { AudioAnalysisDisplay } from '../audio/AudioAnalysisDisplay';
+import { VoiceMetricsSummary } from '../audio/VoiceMetricsSummary';
 import { useInterviewAnalysis } from '@/hooks/useInterviewAnalysis';
 import { AnalysisResult } from '@/lib/analysis/interviewAnalyzer';
 import { TestDataGenerator } from '../debug/TestDataGenerator';
@@ -499,6 +500,33 @@ const InterviewCompletedPage = () => {
 
         {activeTab === 'patterns' && (
           <div className="space-y-6">
+            {/* Voice Metrics Summary */}
+            {audioAnalysisData.length > 0 ? (
+              <VoiceMetricsSummary 
+                analysisHistory={audioAnalysisData}
+                currentAnalysis={audioAnalysisData[audioAnalysisData.length - 1]}
+              />
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center gap-2 mb-4">
+                  <Activity className="w-5 h-5 text-purple-500" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Real-time Voice Metrics</h3>
+                </div>
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center">
+                    <Activity className="w-8 h-8 text-purple-400" />
+                  </div>
+                  <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Voice Analysis Data</h4>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Voice analysis requires audio recording during the interview session.
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Start an interview and enable microphone to capture voice metrics like volume, pitch, and speaking patterns.
+                  </p>
+                </div>
+              </div>
+            )}
+            
             <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
               <h3 className="text-lg font-semibold text-gray-900 mb-6">Speaking Patterns Analysis</h3>
               
