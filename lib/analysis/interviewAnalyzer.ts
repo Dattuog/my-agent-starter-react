@@ -208,7 +208,7 @@ export class InterviewAnalyzer {
     1. The INTERVIEWER asks a question
     2. The CANDIDATE provides a substantial response (more than just "yes/no")
     
-    Format your response as JSON array:
+    IMPORTANT: Respond with ONLY a valid JSON array, no markdown formatting:
     [
       {
         "question": "exact question asked by interviewer",
@@ -218,6 +218,7 @@ export class InterviewAnalyzer {
     ]
     
     Only include meaningful interview questions, not small talk or confirmations.
+    Do not wrap your response in \`\`\`json blocks - return raw JSON only.
     `;
 
     try {
@@ -228,7 +229,33 @@ export class InterviewAnalyzer {
         max_tokens: 2000
       });
 
-      const result = JSON.parse(completion.choices[0].message.content || '[]');
+      // Clean the response content by removing markdown code blocks
+      let content = completion.choices[0].message.content || '[]';
+      console.log('🔍 Raw AI response content:', content.substring(0, 200) + '...');
+      
+      // Remove markdown code blocks if present
+      content = content.replace(/```json\s*/g, '').replace(/```\s*/g, '');
+      
+      // Trim whitespace
+      content = content.trim();
+      
+      // Ensure it starts with [ and ends with ]
+      if (!content.startsWith('[')) {
+        const jsonStart = content.indexOf('[');
+        if (jsonStart !== -1) {
+          content = content.substring(jsonStart);
+        }
+      }
+      
+      if (!content.endsWith(']')) {
+        const jsonEnd = content.lastIndexOf(']');
+        if (jsonEnd !== -1) {
+          content = content.substring(0, jsonEnd + 1);
+        }
+      }
+
+      console.log('🧹 Cleaned content for parsing:', content.substring(0, 200) + '...');
+      const result = JSON.parse(content);
       console.log(`🎯 AI extracted ${result.length} Q&A pairs from transcript`);
       return result;
       

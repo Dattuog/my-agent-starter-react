@@ -114,6 +114,44 @@ export function TestDataGenerator() {
     window.location.href = '/interview-completed?tab=patterns';
   };
 
+  const startLiveVoiceMetrics = () => {
+    console.log('🎤 Starting live voice metrics simulation...');
+    
+    // Generate initial audio data
+    generateAudioTestData();
+    
+    // Start generating continuous audio data
+    const interval = setInterval(() => {
+      const audioData = {
+        timestamp: new Date().toISOString(),
+        volume: Math.random() > 0.3 ? Math.random() * 30 + 35 : Math.random() * 15 + 10,
+        is_silence: Math.random() < 0.3,
+        pitch: Math.random() > 0.3 ? Math.random() * 80 + 120 : 0,
+        speaking_rate: Math.random() > 0.3 ? Math.random() * 0.8 + 0.8 : 0,
+        confidence: Math.random() > 0.3 ? Math.random() * 0.4 + 0.6 : Math.random() * 0.3,
+        emotion: ['neutral', 'confident', 'calm', 'excited'][Math.floor(Math.random() * 4)],
+        participant_identity: 'candidate'
+      };
+      
+      // Add to existing audio data
+      const existingData = JSON.parse(sessionStorage.getItem('audioAnalysisData') || '[]');
+      existingData.push(audioData);
+      
+      // Keep only last 100 data points
+      if (existingData.length > 100) {
+        existingData.splice(0, existingData.length - 100);
+      }
+      
+      sessionStorage.setItem('audioAnalysisData', JSON.stringify(existingData));
+      console.log('🔊 Live audio data updated, total points:', existingData.length);
+    }, 3000);
+    
+    // Store interval ID for cleanup
+    (window as any).voiceMetricsInterval = interval;
+    
+    alert('Live voice metrics started! Check interview completed page.');
+  };
+
   const clearTestData = () => {
     clearData();
     sessionStorage.removeItem('audioAnalysisData');
@@ -130,12 +168,6 @@ export function TestDataGenerator() {
           className="w-full bg-green-500 hover:bg-green-600 px-3 py-1 rounded text-xs"
         >
           Generate Test Data
-        </button>
-        <button 
-          onClick={generateAudioTestData}
-          className="w-full bg-purple-500 hover:bg-purple-600 px-3 py-1 rounded text-xs"
-        >
-          🎤 Test Voice Metrics
         </button>
         <button 
           onClick={clearTestData}
