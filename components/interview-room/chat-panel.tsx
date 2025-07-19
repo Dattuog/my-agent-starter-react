@@ -7,6 +7,7 @@ import { ChatMessageView } from '../livekit/chat/chat-message-view';
 import { ChatEntry } from '../livekit/chat/chat-entry';
 import type { ReceivedChatMessage } from '@livekit/components-react';
 import { generateTranscriptPDF } from '../../lib/pdfGenerator';
+import { useInterviewDataCapture } from '../../lib/interviewDataCapture';
 
 interface ChatPanelProps {
   messages: ReceivedChatMessage[];
@@ -30,10 +31,13 @@ export function ChatPanel({
   const [inputValue, setInputValue] = useState('');
   const [mounted, setMounted] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { addChatMessage } = useInterviewDataCapture();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Note: Message capture is handled in useChatAndTranscription hook to avoid duplication
   
   // For this example, treat all messages as both chat and transcript
   const chatMessages = messages;
@@ -49,6 +53,9 @@ export function ChatPanel({
     if (message.trim()) {
       onSendMessage(message);
       setInputValue('');
+      
+      // Capture the sent message
+      addChatMessage(message, participantName, Date.now());
     }
   };
 

@@ -8,8 +8,11 @@ import { ControlBar } from './control-bar';
 import { ChatPanel } from './chat-panel';
 import { MediaTiles } from '../livekit/media-tiles';
 import { AudioRecordingManager } from '../audio/AudioRecordingManager';
+import { ContinuousAudioRecorder } from '../audio/ContinuousAudioRecorder';
 import useChatAndTranscription from '../../hooks/useChatAndTranscription';
 import { usePublishPermissions } from '../livekit/agent-control-bar/hooks/use-publish-permissions';
+import { useInterviewDataCapture } from '@/lib/interviewDataCapture';
+import { DataCaptureDebug } from '../debug/DataCaptureDebug';
 
 interface InterviewRoomLayoutProps {
   roomName?: string;
@@ -28,8 +31,79 @@ export function InterviewRoomLayout({ roomName = "Software Engineer", participan
   const { messages, send } = useChatAndTranscription();
   const permissions = usePublishPermissions();
 
+  // Initialize data capture for the interview
+  const {
+    startCapture,
+    stopCapture,
+    addTranscript,
+    addChatMessage,
+    addAudioAnalysis,
+    isCapturing,
+    dataCount,
+    clearData
+  } = useInterviewDataCapture();
+
+  // Clear old data and start capturing when room is ready
+  useEffect(() => {
+    if (room && localParticipant && !isCapturing) {
+      // Clear any previous interview data
+      clearData();
+      console.log('🧹 Cleared previous interview data');
+      
+      // Start new capture session
+      startCapture(localParticipant.identity);
+      console.log('🎯 Started capturing interview data for:', localParticipant.identity);
+    }
+    
+    return () => {
+      if (isCapturing) {
+        stopCapture();
+        console.log('🛑 Stopped capturing interview data');
+      }
+    };
+  }, [room, localParticipant, startCapture, stopCapture, isCapturing]);
+
+  // Handle audio analysis data from mock stream
+  const handleAudioData = (audioData: any) => {
+    if (isCapturing) {
+      addAudioAnalysis(audioData);
+      setAudioAnalysisHistory(prev => [...prev.slice(-50), audioData]); // Keep last 50 samples
+      console.log('🎤 Captured audio analysis data:', audioData);
+    }
+  };
+
+  // Debug: Log data capture status
+  useEffect(() => {
+    console.log('📊 Data Capture Status:', {
+      isCapturing,
+      dataCount,
+      messagesCount: messages.length,
+      participantIdentity: localParticipant?.identity
+    });
+  }, [isCapturing, dataCount, messages.length, localParticipant?.identity]);
+
+  // Capture chat messages in real-time
+  useEffect(() => {
+    if (messages && messages.length > 0) {
+      const latestMessage = messages[messages.length - 1];
+      if (latestMessage && isCapturing) {
+        addChatMessage(
+          latestMessage.message,
+          latestMessage.from?.identity || 'unknown',
+          latestMessage.timestamp
+        );
+        console.log('💬 Captured chat message:', latestMessage.message.substring(0, 50) + '...');
+      }
+    }
+  }, [messages, addChatMessage, isCapturing]);
+
   const handleAudioAnalysisUpdate = (analysis: any) => {
     setAudioAnalysisHistory(prev => [...prev.slice(-200), analysis]); // Keep last 200 frames
+    
+    // Also capture audio analysis data
+    if (isCapturing) {
+      addAudioAnalysis(analysis);
+    }
   };
 
   useEffect(() => {
@@ -76,7 +150,7 @@ export function InterviewRoomLayout({ roomName = "Software Engineer", participan
     return {
       marginRight: '360px', // Width of chat panel
       transition: 'margin-right 0.3s ease-in-out'
-    };
+    } as React.CSSProperties;
   };
 
   return (
@@ -180,6 +254,16 @@ export function InterviewRoomLayout({ roomName = "Software Engineer", participan
           </div>
         </div>
       )}
+
+      {/* Debug Component */}
+      <DataCaptureDebug />
+
+      {/* Continuous Audio Recording for Voice Metrics */}
+      <ContinuousAudioRecorder 
+        isRecording={isCapturing}
+        onAudioData={handleAudioData}
+        participantIdentity={localParticipant?.identity}
+      />
     </div>
   );
 }
